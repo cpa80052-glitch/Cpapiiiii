@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Classplus Content Extractor - Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .sidebar {
+            min-height: 100vh;
+            background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .sidebar .nav-link {
+            color: rgba(255, 255, 255, 0.8);
+            border-radius: 10px;
+            margin: 5px 10px;
+            transition: all 0.3s ease;
+        }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+        .content {
+            padding: 20px;
+        }
+        .course-card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+        .course-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+        .course-card .card-img-top {
+            height: 200px;
+            object-fit: cover;
+        }
+        .card-footer {
+            background-color: transparent;
+            border-top: none;
+        }
+        .btn-extract {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border: none;
+            border-radius: 50px;
+            transition: all 0.3s ease;
+        }
+        .btn-extract:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        }
+        .progress {
+            height: 5px;
+        }
+        .job-card {
+            border-left: 4px solid #667eea;
+        }
+        .status-badge {
+            font-size: 0.75rem;
+            padding: 0.25rem 0.5rem;
+            border-radius: 50px;
+        }
+        .status-processing {
+            background-color: #ffc107;
+            color: #212529;
+        }
+        .status-completed {
+            background-color: #198754;
+            color: white;
+        }
+        .status-failed {
+            background-color: #dc3545;
+            color: white;
+        }
+        .user-info {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <div class="col-md-3 col-lg-2 sidebar p-3">
+                <div class="user-info text-center">
+                    <i class="bi bi-person-circle" style="font-size: 2rem;"></i>
+                    <h6 class="mt-2 mb-0">{{ session.mobile }}</h6>
+                    <small class="text-white-50">{{ org_name }}</small>
+                </div>
+                
+                <h4 class="mb-4 mt-4"><i class="bi bi-play-circle"></i> Classplus Extractor</h4>
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#" data-page="courses">
+                            <i class="bi bi-book"></i> My Courses
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-page="jobs">
+                            <i class="bi bi-list-task"></i> Extraction Jobs
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-page="help">
+                            <i class="bi bi-question-circle"></i> Help
+                        </a>
+                    </li>
+                    <li class="nav-item mt-auto">
+                        <a class="nav-link" href="/logout">
+                            <i class="bi bi-box-arrow-right"></i> Logout
+                        </a>
+                    </li>
+                </ul>
+            </div>
+            
+            <!-- Main Content -->
+            <div class="col-md-9 col-lg-10 content">
+                <!-- Courses Page -->
+                <div id="courses-page" class="page">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <h2>My Courses</h2>
+                            <p class="text-muted">Select a course to extract content</p>
+                        </div>
+                        <button class="btn btn-primary" id="refresh-courses">
+                            <i class="bi bi-arrow-clockwise"></i> Refresh
+                        </button>
+                    </div>
+                    
+                    <div class="row" id="courses-container">
+                        <div class="col-12 text-center py-5">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-2">Loading your courses...</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Jobs Page -->
+                <div id="jobs-page" class="page" style="display: none;">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h2>Extraction Jobs</h2>
+                        <button class="btn btn-primary" id="refresh-jobs">
+                            <i class="bi bi-arrow-clockwise"></i> Refresh
+                        </button>
+                    </div>
+                    
+                    <div id="jobs-container">
+                        <div class="col-12 text-center py-5">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-2">Loading jobs...</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Help Page -->
+                <div id="help-page" class="page" style="display: none;">
+                    <h2>Help & Support</h2>
+                    <div class="card">
+                        <div class="card-body">
+                            <h5>How to Use Classplus Extractor</h5>
+                            <ol>
+                                <li>Login with your organization code and mobile number</li>
+                                <li>Enter the OTP sent to your mobile</li>
+                                <li>Select a course from your enrolled courses</li>
+                                <li>Click "Extract Content" to start extraction</li>
+                                <li>Wait for extraction to complete</li>
+                                <li>Download the content file or play videos directly</li>
+                            </ol>
+                            
+                            <h5 class="mt-4">Features</h5>
+                            <ul>
+                                <li>Extract all course content including videos and PDFs</li>
+                                <li>Stream videos directly from the interface</li>
+                                <li>Download content for offline use</li>
+                                <li>Secure links with 24-hour expiration</li>
+                                <li>Organized folder-wise content structure</li>
+                            </ul>
+                            
+                            <h5 class="mt-4">Troubleshooting</h5>
+                            <p>If you encounter any issues:</p>
+                            <ul>
+                                <li>Make sure your organization code is correct</li>
+                                <li>Ensure you're receiving OTP on your mobile</li>
+                                <li>Check that you're enrolled in the course you're trying to extract</li>
+                                <li>Verify your internet connection</li>
+                                <li>Contact support if issues persist</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Extract Modal -->
+    <div class="modal fade" id="extractModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Extract Course Content</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p>Are you sure you want to extract content from this course?</p>
+                    <div class="progress d-none" id="extraction-progress">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="confirm-extract">Extract</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Job Status Modal -->
+    <div class="modal fade" id="jobStatusModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Extraction Status</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="progress mb-3">
+                        <div class="progress-bar" role="progressbar" style="width: 0%"></div>
+                    </div>
+                    <div id="job-status-message">
+                        <p>Starting extraction...</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <button type="button" class="btn btn-primary d-none" id="download-content">Download</button>
+                    <button type="button" class="btn btn-success d-none" id="view-content">View Content</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Navigation
+            const navLinks = document.querySelectorAll('.sidebar .nav-link');
+            const pages = document.querySelectorAll('.page');
+            
+            navLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const pageName = this.getAttribute('data-page');
+                    
+                    // Update active nav
+                    navLinks.forEach(l => l.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Show selected page
+                    pages.forEach(page => {
+                        page.style.display = 'none';
+                    });
+                    document.getElementById(`${pageName}-page`).style.display = 'block';
+                    
+                    // Load page content
+                    if (pageName === 'courses') {
+                        loadCourses();
+                    } else if (pageName === 'jobs') {
+                        loadJobs();
+                    }
+                });
+            });
+            
+            // Load courses on page load
+            loadCourses();
+            
+            // Refresh courses
+            document.getElementById('refresh-courses').addEventListener('click', loadCourses);
+            
+            // Refresh jobs
+            document.getElementById('refresh-jobs').addEventListener('click', loadJobs);
+            
+            let currentCourseId = null;
+            let currentJobId = null;
+            
+            // Load courses
+            function loadCourses() {
+                const container = document.getElementById('courses-container');
+                container.innerHTML = `
+                    <div class="col-12 text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Loading your courses...</p>
+                    </div>
+                `;
+                
+                fetch('/api/courses')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            displayCourses(data.courses);
+                        } else {
+                            container.innerHTML = `
+                                <div class="col-12">
+                                    <div class="alert alert-danger">
+                                        Failed to load courses: ${data.error}
+                                    </div>
+                                </div>
+                            `;
+                        }
+                    })
+                    .catch(error => {
+                        container.innerHTML = `
+                            <div class="col-12">
+                                <div class="alert alert-danger">
+                                    Failed to load courses: ${error.message}
+                                </div>
+                            </div>
+                        `;
+                    });
+            }
+            
+            // Display courses
+            function displayCourses(courses) {
+                const container = document.getElementById('courses-container');
+                
+                if (courses.length === 0) {
+                    container.innerHTML = `
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                No courses found. Make sure you're enrolled in at least one course.
+                            </div>
+                        </div>
+                    `;
+                    return;
+                }
+                
+                container.innerHTML = courses.map(course => `
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="card course-card">
+                            <img src="${course.bannerUrl || 'https://via.placeholder.com/400x200'}" class="card-img-top" alt="${course.name}">
+                            <div class="card-body">
+                                <h5 class="card-title">${course.name}</h5>
+                                <p class="card-text text-muted">${course.description || 'No description available'}</p>
+                            </div>
+                            <div class="card-footer">
+                                <button class="btn btn-extract w-100" data-course-id="${course.id}" data-course-name="${course.name}">
+                                    <i class="bi bi-download"></i> Extract Content
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+                
+                // Add event listeners to extract buttons
+                document.querySelectorAll('.btn-extract').forEach(button => {
+                    button.addEventListener('click', function() {
+                        currentCourseId = this.getAttribute('data-course-id');
+                        const courseName = this.getAttribute('data-course-name');
+                        
+                        document.querySelector('#extractModal .modal-title').textContent = `Extract: ${courseName}`;
+                        const modal = new bootstrap.Modal(document.getElementById('extractModal'));
+                        modal.show();
+                    });
+                });
+            }
+            
+            // Confirm extraction
+            document.getElementById('confirm-extract').addEventListener('click', function() {
+                if (!currentCourseId) return;
+                
+                // Show progress
+                document.getElementById('extraction-progress').classList.remove('d-none');
+                document.getElementById('confirm-extract').disabled = true;
+                
+                // Start extraction
+                fetch('/api/extract', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        course_id: currentCourseId
+                    })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        currentJobId = data.job_id;
+                        
+                        // Close extract modal
+                        bootstrap.Modal.getInstance(document.getElementById('extractModal')).hide();
+                        
+                        // Show job status modal
+                        const jobModal = new bootstrap.Modal(document.getElementById('jobStatusModal'));
+                        jobModal.show();
+                        
+                        // Monitor job status
+                        monitorJobStatus(data.job_id);
+                    } else {
+                        alert('Failed to start extraction: ' + data.error);
+                        
+                        // Reset UI
+                        document.getElementById('extraction-progress').classList.add('d-none');
+                        document.getElementById('confirm-extract').disabled = false;
+                    }
+                })
+                .catch(error => {
+                    alert('Failed to start extraction: ' + error.message);
+                    
+                    // Reset UI
+                    document.getElementById('extraction-progress').classList.add('d-none');
+                    document.getElementById('confirm-extract').disabled = false;
+                });
+            });
+            
+            // Monitor job status
+            function monitorJobStatus(jobId) {
+                const progressBar = document.querySelector('#jobStatusModal .progress-bar');
+                const statusMessage = document.getElementById('job-status-message');
+                const downloadBtn = document.getElementById('download-content');
+                const viewBtn = document.getElementById('view-content');
+                
+                // Hide buttons initially
+                downloadBtn.classList.add('d-none');
+                viewBtn.classList.add('d-none');
+                
+                const checkStatus = () => {
+                    fetch(`/api/job_status/${jobId}`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.success) {
+                                const job = data.job;
+                                
+                                // Update progress
+                                progressBar.style.width = `${job.progress}%`;
+                                progressBar.setAttribute('aria-valuenow', job.progress);
+                                
+                                // Update status message
+                                if (job.status === 'processing') {
+                                    statusMessage.innerHTML = `<p>Extracting content... ${job.progress}%</p>`;
+                                    // Continue checking
+                                    setTimeout(checkStatus, 2000);
+                                } else if (job.status === 'completed') {
+                                    statusMessage.innerHTML = '<p class="text-success">Extraction completed successfully!</p>';
+                                    
+                                    // Show buttons
+                                    downloadBtn.classList.remove('d-none');
+                                    viewBtn.classList.remove('d-none');
+                                    
+                                    // Set download link
+                                    downloadBtn.onclick = () => {
+                                        window.location.href = `/download_content/${jobId}`;
+                                    };
+                                    
+                                    // Set view link
+                                    viewBtn.onclick = () => {
+                                        window.open(`/download_content/${jobId}`, '_blank');
+                                    };
+                                } else if (job.status === 'failed') {
+                                    statusMessage.innerHTML = `<p class="text-danger">Extraction failed: ${job.error}</p>`;
+                                }
+                            } else {
+                                statusMessage.innerHTML = `<p class="text-danger">Failed to check job status: ${data.error}</p>`;
+                            }
+                        })
+                        .catch(error => {
+                            statusMessage.innerHTML = `<p class="text-danger">Error checking job status: ${error.message}</p>`;
+                        });
+                };
+                
+                // Start checking
+                checkStatus();
+            }
+            
+            // Load jobs
+            function loadJobs() {
+                const container = document.getElementById('jobs-container');
+                container.innerHTML = `
+                    <div class="col-12 text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Loading jobs...</p>
+                    </div>
+                `;
+                
+                // In a real app, you would fetch jobs from an API
+                // For now, we'll just show a message
+                setTimeout(() => {
+                    container.innerHTML = `
+                        <div class="col-12">
+                            <div class="alert alert-info">
+                                No extraction jobs found. Start by extracting content from your courses.
+                            </div>
+                        </div>
+                    `;
+                }, 1000);
+            }
+        });
+    </script>
+</body>
+</html>
